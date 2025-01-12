@@ -19,6 +19,15 @@ def create_data(points, classes): #create spiral data
 X, y = create_data(100,3)
 
 X_test, y_test = create_data(100,3)
+class Layer_Dropout:
+    def __init__(self, rate):
+        self.rate = 1 - rate
+    def forward(self, inputs):
+        self.inputs = inputs
+        self.binary_mask = np.random.binomial(1, self.rate, size=inputs.shape) / self.rate
+        self.output = inputs * self.binary_mask
+    def backward(self, dvalues):
+        self.dinputs = dvalues * self.binary_mask
 
 class layer_Dense: #the layer of neurons
     def __init__(self, n_inputs, n_neurons, weight_regularizer_L1 = 0, weight_regularizer_L2 = 0, bias_regularizer_L1 = 0, bias_regularizer_L2 = 0):
@@ -157,17 +166,19 @@ class Optimizer_Adam:
     def Post_update_param(self):
         self.interation += 1
 #Initialization
-Dense1 = layer_Dense(2,64, weight_regularizer_L2= 5e-4, bias_regularizer_L2= 5e-4)   
+Dense1 = layer_Dense(2,512, weight_regularizer_L2= 5e-4, bias_regularizer_L2= 5e-4)   
 activation1 = Activation_ReLU()
-Dense2 = layer_Dense(64,3)
+Drop_out_1 = Layer_Dropout(0.1)
+Dense2 = layer_Dense(512,3)
 loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
-optimizer = Optimizer_Adam(learning_rate = 0.02, decay=5e-7)
+optimizer = Optimizer_Adam(learning_rate = 0.05, decay=5e-5)
 for epochs in range(10001):
     #actual working
     Dense1.forward(X)
     activation1.forward(Dense1.output)
+    Drop_out_1.forward(activation1.output)
 
-    Dense2.forward(activation1.output)
+    Dense2.forward(Drop_out_1.output)
 
     data_loss = loss_activation.forward(Dense2.output, y)
 
@@ -188,7 +199,8 @@ for epochs in range(10001):
         f'lr: {optimizer.current_learning_rate}')
     loss_activation.backward(loss_activation.output, y_test)
     Dense2.backward(loss_activation.dinputs)
-    activation1.backward(Dense2.dinputs)
+    Drop_out_1.backward(Dense2.dinputs)
+    activation1.backward(Drop_out_1.dinputs)
     Dense1.backward(activation1.dinputs)
 
     optimizer.Pre_update_param()
