@@ -214,10 +214,11 @@ activation1.forward(Dense1.output)
 
 Dense2.forward(activation1.output)
 
-loss = loss_activation.forward(Dense2.output, y_test)
+loss = loss_activation.forward(Dense2.output, y)
 
 predictions = np.argmax(loss_activation.output, axis = 1)
 if len(y_test.shape) == 2:
     y = np.argmax(y_test, axis=1)
 accuracy = np.mean(predictions==y_test)
 print(f'validation, acc: {accuracy:.3f}, lost: {loss:.3f}')
+
